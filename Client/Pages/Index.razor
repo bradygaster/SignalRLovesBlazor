@@ -1,0 +1,53 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager NavigationManager
+
+<h1>Hello, world!</h1>
+<span>@connectionState</span>
+
+@code {
+    HubConnection hubConnection;
+    string connectionState = "Disconnected";
+
+    protected async override Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(new Uri("http://localhost:4000/sequencerHub"))
+            .WithAutomaticReconnect(new TimeSpan[] {
+                TimeSpan.FromSeconds(0),
+                TimeSpan.FromSeconds(0),
+                TimeSpan.FromSeconds(5),
+                TimeSpan.FromSeconds(8),
+                TimeSpan.FromSeconds(10),
+                TimeSpan.FromSeconds(15),
+                TimeSpan.FromSeconds(30)
+            })
+            .Build();
+
+        hubConnection.Reconnecting += (error) =>
+        {
+            connectionState = hubConnection.State.ToString();
+            StateHasChanged();
+            return Task.CompletedTask;
+        };
+
+        hubConnection.Reconnected += (connectionId) =>
+        {
+            connectionState = hubConnection.State.ToString();
+            StateHasChanged();
+            return Task.CompletedTask;
+        };
+
+        hubConnection.Closed += (error) =>
+        {
+            connectionState = hubConnection.State.ToString();
+            StateHasChanged();
+            return Task.CompletedTask;
+        };
+
+        await hubConnection.StartAsync().ContinueWith((o) => {
+            connectionState = hubConnection.State.ToString();
+            StateHasChanged();
+        });
+    }
+}
